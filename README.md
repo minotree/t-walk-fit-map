@@ -1,6 +1,6 @@
 # Walk Fit Map
 
-산책로 운동시설 안내 서비스를 PWA·Ionic/Capacitor 앱·토스 미니앱으로 확장하는 pnpm workspace다. 현재 기존 PWA의 `apps/web` 이전과 로컬 검증을 마쳤으며 실서비스 연결·기기 검증은 남아 있다. 원본과 기존 Supabase DB·사진 저장소는 보존한다.
+산책로 운동시설 안내 서비스를 PWA·Ionic/Capacitor 앱·토스 미니앱으로 확장하는 pnpm workspace다. 현재 기존 PWA의 `apps/web` 이전과 로컬 검증, 실제 데이터 연결·주요 흐름 확인을 마쳤으며 Vercel 배포·기기 검증은 남아 있다. 원본과 기존 Supabase DB·사진 저장소는 보존한다.
 
 ## 시작
 
@@ -29,4 +29,4 @@ pnpm.cmd preview
 
 프로필의 `USER_PROFILE` 및 선택 지점의 `LAST_SELECTED_SITE_CENTER` 키를 유지한다. 다른 출처(도메인/포트)로 실행하면 브라우저 저장소는 자동 이전되지 않는다. 개인정보를 포함한 클릭 통계 전송은 비활성화했다. [의도적인 변경](docs/decisions/001-web-baseline.md)과 [검증 현황](progress.md)을 참고한다.
 
-빌드 산출물은 `apps/web/dist`다. 실제 배포 시 SPA 경로를 `index.html`로 재작성해야 한다. Vercel 예시 설정은 `apps/web/vercel.json`에 있다. 현재 배포·DB 변경은 수행하지 않는다.
+빌드 산출물은 `apps/web/dist`다. Vercel에서는 Root Directory를 `apps/web`으로 지정한다. 빌드·출력·SPA 재작성·PWA 캐시 헤더는 `apps/web/vercel.json`에서 관리한다. [Vercel 설정과 환경변수·기기 확인 절차](docs/vercel-pwa.md)를 따라 진행한다.

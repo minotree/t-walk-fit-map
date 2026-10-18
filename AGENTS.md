@@ -8,7 +8,7 @@
 - 문서와 작업 보고는 한국어로 작성한다.
 - pnpm workspace, TypeScript strict를 사용한다. 각 앱은 독립적으로 빌드·배포한다.
 - Web/PWA는 현재 React·Vite·Ionic UI·OpenLayers/V-World를 유지한다. 모바일은 Ionic React + Capacitor, 토스는 현재 공식 SDK/TDS 요구사항에 맞춰 구현한다.
-- 현재 1~2단계 웹 기준점 구현과 로컬 검증을 마쳤다. 실서비스 연결과 기기 PWA 검증은 남아 있으며, 모바일·토스 UI와 본격적인 공통 데이터 계층 추출은 후속 단계다. 실제 진행 상태는 `progress.md`를 따른다.
+- 현재 1~2단계 웹 기준점 구현과 로컬 검증을 마쳤고 실제 데이터 연결·주요 흐름은 사용자가 확인했다. Vercel 배포·기기 PWA 검증은 남아 있으며, 모바일·토스 UI와 본격적인 공통 데이터 계층 추출은 후속 단계다. 실제 진행 상태는 `progress.md`를 따른다.
 - 의존성 추가 전 기존 의존성, 번들 영향, 라이선스, 플랫폼 호환성과 유지보수 상태를 확인한다. 설치 버전과 공식 문서를 확인하지 않고 SDK/API의 존재를 가정하지 않는다.
 - 다른 프로젝트의 Tailwind·Leaflet·Tauri나 게임·보상·인증 서버를 이 프로젝트의 요구사항으로 가져오지 않는다.
 
@@ -81,3 +81,4 @@
 - 실행·환경 설정·검사 명령: `README.md`
 - 실제 진행·검증·남은 항목: `progress.md`
 - 웹 이전의 의도적인 변경: `docs/decisions/001-web-baseline.md`
+- Vercel 배포 설정·환경변수·PWA 검증: `docs/vercel-pwa.md`
