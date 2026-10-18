@@ -1,0 +1,18 @@
+{
+  "name": "t-walk-fit-map",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @walk-fit/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm --filter @walk-fit/web lint",
+    "test": "pnpm --filter @walk-fit/web test",
+    "test:e2e": "pnpm --filter @walk-fit/web exec playwright test",
+    "preview": "pnpm --filter @walk-fit/web preview"
+  }
+}
