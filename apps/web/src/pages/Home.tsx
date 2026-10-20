@@ -19,6 +19,7 @@ import { UserProfile } from '../types/userProfile';
 import { VworldMap } from '../components/VworldMap';
 import type { SiteSummary } from '@walk-fit/contracts';
 import { getPublishedSites } from '../services/siteService';
+import { browserLocationProvider } from '../services/locationService';
 
 const LAST_SELECTED_SITE_KEY = 'LAST_SELECTED_SITE_CENTER';
 
@@ -62,25 +63,12 @@ export const Home: React.FC = () => {
     }
   };
 
-  // 현재 위치 GPS 조회 함수
+  // 플랫폼 위치 조회는 웹 어댑터를 통해 실행한다.
   const fetchCurrentLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setUserLocation(loc);
-        },
-        (error) => {
-          console.warn('[Home] 위치 권한 거부 또는 오류:', error.message);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    }
+    void browserLocationProvider.getCurrentLocation().then(setUserLocation).catch(() => {
+      console.warn('[Home] 현재 위치를 확인할 수 없습니다. 위치 권한과 기기 설정을 확인해 주세요.');
+    });
   };
-
   // 데이터 로드 통합 함수
   const loadData = useCallback(async () => {
     const profile = await getUserProfile();

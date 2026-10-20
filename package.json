@@ -10,9 +10,12 @@
     "dev": "pnpm --filter @walk-fit/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm --filter @walk-fit/web lint",
-    "test": "pnpm --filter @walk-fit/web test",
+    "lint": "node apps/web/node_modules/eslint/bin/eslint.js --config apps/web/eslint.config.js apps/web/src packages/contracts/src packages/data/src apps/toss/src --max-warnings 0",
+    "test": "pnpm -r --if-present test",
     "test:e2e": "pnpm --filter @walk-fit/web exec playwright test",
-    "preview": "pnpm --filter @walk-fit/web preview"
+    "preview": "pnpm --filter @walk-fit/web preview",
+    "dev:toss": "pnpm --filter @walk-fit/toss dev",
+    "build:toss": "pnpm --filter @walk-fit/toss build",
+    "test:toss:e2e": "pnpm --filter @walk-fit/toss test:e2e"
   }
 }

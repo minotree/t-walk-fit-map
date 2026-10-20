@@ -17,6 +17,7 @@
     "@ionic/react": "9.0.6",
     "@supabase/supabase-js": "2.117.2",
     "@walk-fit/contracts": "workspace:*",
+    "@walk-fit/data": "workspace:*",
     "ionicons": "8.1.0",
     "ol": "10.10.0",
     "react": "19.0.0",
