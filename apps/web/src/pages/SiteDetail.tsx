@@ -1,3 +1,4 @@
+import { SitePhoto } from '../components/SitePhoto';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   IonPage,
@@ -104,29 +105,10 @@ export const SiteDetail: React.FC = () => {
         )}
 
         {/* 지점 상세 정보 및 운동기구 목록 */}
-        {site && !loading && (
+        {site && !loading && !error && (
           <>
             {/* 1. 지점 대표 사진 */}
-            {site.site_image_path && (
-              <div
-                style={{
-                  width: '100%',
-                  height: '200px',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  marginBottom: '16px'
-                }}
-              >
-                <img
-                  src={site.site_image_path}
-                  alt={site.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
+            <SitePhoto src={site.site_image_path} name={site.name} />
 
             {/* 2. 지점 기본 정보 카드 */}
             <IonCard style={{ margin: 0, marginBottom: '20px', borderRadius: '12px' }}>

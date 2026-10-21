@@ -14,7 +14,7 @@ export interface SiteDetail {
   amenity_note: string;
   last_verified_at: string | null;
   survey_location_id?: string | null;
-  site_image_path?: string | null; // <-- exercise_sites의 지점 대표 이미지 URL 또는 경로
+  site_image_path?: string | null; // 공개 지점 RPC에서 조사 우선순위를 적용하고 변환한 표시용 URL
   equipments: InstallationItem[];
 }
 

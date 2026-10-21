@@ -255,3 +255,25 @@ test('모바일 한 손가락 드래그로 지도를 이동하고 범위를 재�
     await context.close();
   } finally { await context.close(); }
 });
+
+
+test('사진 응답 대기·완료·실패 상태를 구분한다', async ({ page }) => {
+  await fixtures(page);
+  let release = () => {};
+  const wait = new Promise<void>(resolve => { release = resolve; });
+  let fail = false;
+  await page.route('https://images.example.test/current-survey.jpg', async route => {
+    await wait;
+    if (fail) { await route.abort(); return; }
+    await route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><rect width="200" height="120" fill="blue"/></svg>' });
+  });
+  try {
+    await page.goto('/sites/site-1');
+    await expect(page.getByText('사진을 불러오고 있어요.')).toBeVisible();
+  } finally { release(); }
+  await expect(page.getByText('사진을 불러오고 있어요.')).toHaveCount(0);
+  await expect(page.locator('.photo-frame')).toHaveAttribute('aria-busy', 'false');
+  fail = true;
+  await page.reload();
+  await expect(page.getByText('사진을 불러오지 못했어요.')).toBeVisible();
+});

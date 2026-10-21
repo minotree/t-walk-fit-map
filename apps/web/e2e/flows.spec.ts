@@ -104,3 +104,21 @@ for (const mode of ['empty', 'error'] as const) test(`빈 목록과 통신 오�
   await page.getByText('나중에', { exact: true }).click();
   await expect(page.getByText(mode === 'empty' ? '등록된 공개 운동시설이 없습니다.' : '운동시설 정보를 불러오지 못했습니다.', { exact: false })).toBeVisible();
 });
+
+test('현장 사진 로딩·실패·미등록 상태를 구분한다', async ({ page }) => {
+  await fixtures(page);
+  let release = () => {};
+  const wait = new Promise<void>(resolve => { release = resolve; });
+  await page.route('https://images.example.test/current-survey.jpg', async route => {
+    await wait;
+    await route.abort();
+  });
+  await page.goto('/sites/site-1');
+  try {
+    await expect(page.getByRole('status')).toContainText('현장 사진을 불러오는 중');
+  } finally { release(); }
+  await expect(page.getByRole('status')).toHaveText('현장 사진을 불러오지 못했습니다.');
+  await page.route('**/rpc/get_published_site_photo*', route => route.fulfill({ json: null }));
+  await page.reload();
+  await expect(page.getByText('등록된 현장 사진이 없습니다.')).toBeVisible();
+});

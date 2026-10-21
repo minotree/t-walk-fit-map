@@ -4,6 +4,44 @@ import { mapEquipmentDetail, mapInstallation, mapSiteDetail, mapSiteSummary, row
 
 /** 클라이언트 생성과 인증 설정은 호출하는 앱이 소유한다. */
 export function createSiteRepository(supabase: SupabaseClient): SiteRepository {
+  // 서명 만료 전에 갱신하며 저장소 인스턴스의 메모리에서만 재사용한다.
+  const signedPhotos = new Map<string, { expiresAt: number; url: Promise<string> }>();
+  async function getPhoto(siteId: string): Promise<string | null> {
+    const { data: photo, error } = await supabase.rpc('get_published_site_photo',
+      { p_site_id: siteId }, { get: true });
+    if (error) throw new Error('시설 대표 사진을 불러오는 데 실패했습니다.');
+    if (photo === null) return null;
+    if (typeof photo !== 'string' || !photo.trim()) throw new Error('시설 대표 사진 응답 형식이 올바르지 않습니다.');
+    const bucket = supabase.storage.from('survey-photos');
+    const prefix = bucket.getPublicUrl('').data.publicUrl;
+    let path = photo;
+    if (photo.startsWith(prefix)) {
+      path = decodeURIComponent(new URL(photo).pathname.slice(new URL(prefix).pathname.length));
+    } else if (/^https?:\/\//.test(photo)) return photo;
+    const key = JSON.stringify([siteId, path]);
+    const now = Date.now();
+    const cached = signedPhotos.get(key);
+    if (cached && cached.expiresAt > now) return cached.url;
+    for (const [entryKey, entry] of signedPhotos) {
+      if (entry.expiresAt <= now) signedPhotos.delete(entryKey);
+    }
+    if (signedPhotos.size >= 100) {
+      const oldest = signedPhotos.keys().next().value;
+      if (oldest !== undefined) signedPhotos.delete(oldest);
+    }
+    const url = (async () => {
+      const { data, error: signError } = await bucket.createSignedUrl(path, 3600);
+      if (signError || !data?.signedUrl) throw new Error('시설 사진을 불러오는 데 실패했습니다.');
+      return data.signedUrl;
+    })();
+    const entry = { expiresAt: now + 55 * 60 * 1000, url };
+    signedPhotos.set(key, entry);
+    try { return await url; }
+    catch (error) {
+      if (signedPhotos.get(key) === entry) signedPhotos.delete(key);
+      throw error;
+    }
+  }
   return {
     async getPublishedSitesInBounds(bounds) {
       const { west, south, east, north } = bounds;
@@ -33,32 +71,13 @@ export function createSiteRepository(supabase: SupabaseClient): SiteRepository {
       if (error) throw new Error('시설 상세 정보를 불러오는 데 실패했습니다.');
       if (!data) return null;
       const site = row(data);
-      // 조사 테이블의 익명 SELECT 권한 없이 공개 지점의 대표 사진만 조회한다.
-      const { data: photo, error: photoError } = await supabase.rpc('get_published_site_photo',
-        { p_site_id: siteId }, { get: true });
-      if (photoError) throw new Error('시설 대표 사진을 불러오는 데 실패했습니다.');
-      if (photo !== null && (typeof photo !== 'string' || !photo.trim())) {
-        throw new Error('시설 대표 사진 응답 형식이 올바르지 않습니다.');
-      }
-      let image: string | null = null;
-      if (typeof photo === 'string') {
-        const bucket = supabase.storage.from('survey-photos');
-        const publicPrefix = bucket.getPublicUrl('').data.publicUrl;
-        let path = photo;
-        if (photo.startsWith(publicPrefix)) {
-          path = decodeURIComponent(new URL(photo).pathname.slice(new URL(publicPrefix).pathname.length));
-        } else if (/^https?:\/\//.test(photo)) {
-          image = photo;
-        }
-        if (!image) {
-          const { data: signed, error: signedError } = await bucket.createSignedUrl(path, 3600);
-          if (signedError || !signed?.signedUrl) throw new Error('시설 사진을 불러오는 데 실패했습니다.');
-          image = signed.signedUrl;
-        }
-      }
-      const { data: installations, error: installationError } = await supabase.from('site_equipment')
-        .select('id, quantity, display_order, is_published, equipment_id, equipment_catalog (id, name, model_name, default_image_path)')
-        .eq('site_id', siteId).eq('is_published', true).order('display_order', { ascending: true });
+      // 공개 지점 확인 후 사진 준비와 설치 기구 조회를 동시에 시작한다.
+      const [image, { data: installations, error: installationError }] = await Promise.all([
+        getPhoto(siteId),
+        supabase.from('site_equipment')
+          .select('id, quantity, display_order, is_published, equipment_id, equipment_catalog (id, name, model_name, default_image_path)')
+          .eq('site_id', siteId).eq('is_published', true).order('display_order', { ascending: true }),
+      ]);
       // 조회 실패를 기구가 없는 시설로 표시하지 않는다.
       if (installationError) throw new Error('설치 기구 정보를 불러오는 데 실패했습니다.');
       return mapSiteDetail(site, rows(installations).map(mapInstallation), image);
