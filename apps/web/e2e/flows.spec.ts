@@ -9,6 +9,9 @@ async function fixtures(page: Page, mode: 'ok' | 'empty' | 'error' = 'ok') {
   const writes: string[] = [];
   await page.route('https://fixture-images.test/**', route => route.fulfill({ contentType: 'image/svg+xml', body: decodeURIComponent(image.split(',').slice(1).join(',')) }));
   await page.route('https://**.supabase.co/**', async route => {
+    if (new URL(route.request().url()).pathname.endsWith('/rpc/get_published_site_photo') && route.request().method() === 'GET') {
+      await route.fulfill({ json: 'https://images.example.test/current-survey.jpg' }); return;
+    }
     if (route.request().method() !== 'GET') {
       writes.push(route.request().method());
       await route.abort();
@@ -23,6 +26,7 @@ async function fixtures(page: Page, mode: 'ok' | 'empty' | 'error' = 'ok') {
     const rows = mode === 'empty' ? [] : url.pathname.endsWith('exercise_sites') ? [site] : [equipment];
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(single ? rows[0] ?? null : rows) });
   });
+  await page.route('https://images.example.test/current-survey.jpg', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><rect width="200" height="120" fill="blue"/></svg>' }));
   await page.route('https://api.vworld.kr/**', route => route.abort());
   return writes;
 }
@@ -40,6 +44,7 @@ test('지도 마커 → 시설·사진 → 기구 → 뒤로가기와 중심 복
   await expect(page).toHaveURL(/\/sites\/site-1$/);
   await expect(page.getByText('테스트 산책로')).toBeVisible();
   await expect(page.getByRole('img', { name: site.name })).toBeVisible();
+  await expect(page.getByRole('img', { name: site.name })).toHaveAttribute('src', 'https://images.example.test/current-survey.jpg');
   await page.screenshot({ path: testInfo.outputPath('site-detail.png') });
   await page.getByText('하늘걷기', { exact: true }).click();
   await expect(page).toHaveURL(/\/equipment\/installation-1$/);

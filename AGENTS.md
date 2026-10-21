@@ -12,6 +12,17 @@
 - 의존성 추가 전 기존 의존성, 번들 영향, 라이선스, 플랫폼 호환성과 유지보수 상태를 확인한다. 설치 버전과 공식 문서를 확인하지 않고 SDK/API의 존재를 가정하지 않는다.
 - 다른 프로젝트의 Tailwind·Leaflet·Tauri나 게임·보상·인증 서버를 이 프로젝트의 요구사항으로 가져오지 않는다.
 
+### WalkFit 전체 앱 구성과 공유 데이터
+
+- 흐름: 조사 PWA(`D:\DEV\field-survey-pwa`)의 현장 사진·위치·메모 수집 → 관리자(`D:\DEV\walk_fit_admin`)의 검수·사진 편집·승인 → 이 프로젝트의 사용자 서비스.
+- 세 프로젝트는 같은 Supabase DB·Storage를 공유하지만 별도 프로젝트다. 전체 workspace 통합·프로젝트 이동은 별도 요청 없이 진행하지 않는다. 관리자·조사 프로젝트는 참고용 읽기만 한다.
+- 현재 `apps/web`은 사용자 PWA, `apps/toss`는 Apps in Toss 미니앱, `packages/contracts`·`packages/data`는 공통 계약·조회다. Ionic React + Capacitor 확장은 향후 계획이다.
+- 대표 사진 원본은 `survey_locations.stamped_photo_path`, 연결은 `exercise_sites.survey_location_id`다. 조사 사진이 없을 때만 호환용 `exercise_sites.site_image_path`를 사용하며 관리자 저장 시 경로를 재복사하지 않는다.
+- 설치 기구는 `site_equipment.equipment_id`로 `equipment_catalog`를 참조한다. `site_equipment.site_image_path`는 존재하지 않는다.
+- 사진 교체는 새 파일 업로드 → DB 경로 변경 → 참조 확인 후 미사용 이전 파일 삭제 순서다. 공유 파일·외부 URL을 임의로 삭제하지 않는다.
+- 관리자 승인은 `admin_approve_survey_to_site` RPC를 사용한다. 관리자 사진 교체 후 표시 확인은 사용자 보고이며 신규 조사 등록부터 승인까지 실제 연동은 남아 있다.
+- 사용자 앱은 조사 테이블 전체에 익명 조회 권한을 부여하지 않고 공개 지점의 대표 사진만 제한된 RPC로 조회한다. DB·Storage 점검·적용·호환성 검증은 `docs/site-photos.md`를 따른다.
+
 ## 2. 원본·데이터 보존
 
 - `D:\DEV\walk-fit-map`은 읽기 전용 복구 원본이다. 소스·환경 파일·Git 설정·이력을 수정하지 않는다.

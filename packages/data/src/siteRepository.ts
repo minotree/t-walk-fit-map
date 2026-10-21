@@ -33,9 +33,29 @@ export function createSiteRepository(supabase: SupabaseClient): SiteRepository {
       if (error) throw new Error('시설 상세 정보를 불러오는 데 실패했습니다.');
       if (!data) return null;
       const site = row(data);
-      const rawImage = typeof site.site_image_path === 'string' ? site.site_image_path : null;
-      const image = !rawImage ? null : /^https?:\/\//.test(rawImage) ? rawImage
-        : supabase.storage.from('survey-photos').getPublicUrl(rawImage).data.publicUrl;
+      // 조사 테이블의 익명 SELECT 권한 없이 공개 지점의 대표 사진만 조회한다.
+      const { data: photo, error: photoError } = await supabase.rpc('get_published_site_photo',
+        { p_site_id: siteId }, { get: true });
+      if (photoError) throw new Error('시설 대표 사진을 불러오는 데 실패했습니다.');
+      if (photo !== null && (typeof photo !== 'string' || !photo.trim())) {
+        throw new Error('시설 대표 사진 응답 형식이 올바르지 않습니다.');
+      }
+      let image: string | null = null;
+      if (typeof photo === 'string') {
+        const bucket = supabase.storage.from('survey-photos');
+        const publicPrefix = bucket.getPublicUrl('').data.publicUrl;
+        let path = photo;
+        if (photo.startsWith(publicPrefix)) {
+          path = decodeURIComponent(new URL(photo).pathname.slice(new URL(publicPrefix).pathname.length));
+        } else if (/^https?:\/\//.test(photo)) {
+          image = photo;
+        }
+        if (!image) {
+          const { data: signed, error: signedError } = await bucket.createSignedUrl(path, 3600);
+          if (signedError || !signed?.signedUrl) throw new Error('시설 사진을 불러오는 데 실패했습니다.');
+          image = signed.signedUrl;
+        }
+      }
       const { data: installations, error: installationError } = await supabase.from('site_equipment')
         .select('id, quantity, display_order, is_published, equipment_id, equipment_catalog (id, name, model_name, default_image_path)')
         .eq('site_id', siteId).eq('is_published', true).order('display_order', { ascending: true });

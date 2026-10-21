@@ -15,12 +15,16 @@ async function fixtures(page: Page, configured = true, mode: 'ok' | 'empty' | 'e
     localStorage.setItem('test:USER_PROFILE', '{"isConfigured":true,"useCurrentLocation":false}');
   });
   await page.route('https://**.supabase.co/**', async route => {
+    if (new URL(route.request().url()).pathname.endsWith('/rpc/get_published_site_photo') && route.request().method() === 'GET') {
+      await route.fulfill({ json: 'https://images.example.test/current-survey.jpg' }); return;
+    }
     if (route.request().method() !== 'GET') { writes.push(route.request().method()); await route.abort(); return; }
     if (mode === 'error') { await route.fulfill({ status: 403, json: { message: 'fixture unavailable' } }); return; }
     const single = route.request().headers().accept?.includes('object+json');
     const data = mode === 'empty' ? [] : new URL(route.request().url()).pathname.endsWith('exercise_sites') ? [site] : [equipment];
     await route.fulfill({ json: single ? data[0] ?? null : data });
   });
+  await page.route('https://images.example.test/current-survey.jpg', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><rect width="200" height="120" fill="blue"/></svg>' }));
   await page.route('https://api.vworld.kr/**', route => route.abort());
   return { writes, errors };
 }
@@ -61,6 +65,7 @@ test('마커→전면 광고→지점→기구, 3개 화면 배너와 뒤로가�
   await expect(page).toHaveURL(/\/home$/);
   await page.getByRole('button', { name: '테스트 광고 닫기' }).click();
   await expect(page.getByRole('heading', { name: site.name })).toBeVisible();
+  await expect(page.locator('img[src="https://images.example.test/current-survey.jpg"]')).toBeVisible();
   await expect(page.getByText('테스트 산책로')).toBeVisible();
   await expect(page.getByText('Ad · 테스트 배너')).toBeVisible();
   await page.screenshot({ path: info.outputPath('site.png') });
